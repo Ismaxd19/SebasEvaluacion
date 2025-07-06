@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Boleta de Calificaciones - UNL</title>
+<style>
+  body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 20px; }
+  .reporte { background: #fff; padding: 20px; border-radius: 10px; max-width: 1000px; margin: auto; box-shadow: 0 0 10px rgba(0,0,0,0.2); }
+  .encabezado { display: flex; align-items: center; border-bottom: 2px solid #000; padding-bottom: 10px; }
+  .encabezado img { height: 80px; margin-right: 15px; }
+  .encabezado h2, .encabezado h3 { margin: 0; text-align: center; }
+  .datos-generales { margin-top: 10px; font-size: 0.95rem; }
+  table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.85rem; table-layout: fixed; }
+  th, td { border: 1px solid #000; padding: 4px; text-align: center; word-wrap: break-word; }
+  th { background: #eee; }
+  input[type='number'] { width: 100%; box-sizing: border-box; text-align: center; border: none; outline: none; background: transparent; font-size: 0.85rem; }
+  input[type='number']:focus { background: #f0f8ff; }
+  .botones { text-align: center; margin-top: 20px; }
+  button { padding: 8px 16px; margin: 5px; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; }
+  .guardar { background: #28a745; color: #fff; }
+  .pdf { background: #007bff; color: #fff; }
+  .eliminar { background: #dc3545; color: #fff; }
+</style>
+</head>
+<body>
+
+<div class="reporte" id="reporte">
+  <div class="encabezado">
+    <img src="fondo/LOGO.png" alt="Logo UNL">
+    <div>
+      <h2>UNIVERSIDAD NACIONAL DE LOJA</h2>
+      <h3>Carrera de las Ciencias Experimentales Informática</h3>
+    </div>
+  </div>
+
+  <div class="datos-generales">
+    <p><strong>Nombre del Estudiante:</strong> <span id="nombreEstudiante"></span></p>
+    <p><strong>Fecha de Registro:</strong> <span id="fechaRegistro"></span></p>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th rowspan="2">Área</th>
+        <th colspan="5">Parcial 1</th>
+        <th colspan="5">Parcial 2</th>
+        <th colspan="5">Parcial 3</th>
+        <th rowspan="2">PROM</th>
+        <th rowspan="2">EX Q1</th>
+        <th rowspan="2">QUIMESTRE</th>
+      </tr>
+      <tr>
+        <th>D</th><th>A</th><th>L</th><th>E</th><th>Nota</th>
+        <th>D</th><th>A</th><th>L</th><th>E</th><th>Nota</th>
+        <th>D</th><th>A</th><th>L</th><th>E</th><th>Nota</th>
+      </tr>
+    </thead>
+    <tbody id="tablaNotas"></tbody>
+  </table>
+
+  <p style="text-align:right; margin-top:10px; font-size:0.9rem;">Fecha y hora de exportación: <span id="fechaExportacion"></span></p>
+</div>
+
+<div class="botones">
+  <input type="text" id="inputNombre" placeholder="Nombre del estudiante">
+  <button class="guardar" onclick="generarTabla()">Registrar</button>
+  <button class="pdf" onclick="exportarPDF()">Exportar PDF / Imprimir</button>
+  <button class="eliminar" onclick="eliminarDatos()">Eliminar</button>
+  <button id="btnSalir">Salir al Menú</button>
+</div>
+
+<script>
+const materias = ["Lengua y Literatura", "Matemática", "Estudios Sociales", "Ciencias Naturales", "Educación Cultural y Artística", "Educación Física", "Inglés"];
+
+function generarTabla() {
+  const nombre = document.getElementById("inputNombre").value.trim();
+  if (!nombre) return alert("Ingrese el nombre del estudiante");
+  document.getElementById("nombreEstudiante").textContent = nombre;
+  document.getElementById("fechaRegistro").textContent = new Date().toLocaleDateString();
+
+  let tbody = document.getElementById("tablaNotas");
+  tbody.innerHTML = "";
+
+  materias.forEach(materia => {
+    let row = `<tr><td>${materia}</td>`;
+    for(let p=1;p<=3;p++){
+      ['D','A','L','E'].forEach(s => {
+        row += `<td><input type='number' min='0' max='10' step='0.1' id='${materia}_P${p}_${s}' onchange='validarNota(this); calcularNotas("${materia}")'></td>`;
+      });
+      row += `<td id='${materia}_P${p}_N'>0.00</td>`;
+    }
+    row += `<td id='${materia}_PROM'>0.00</td>`;
+    row += `<td><input type='number' min='0' max='10' step='0.1' id='${materia}_EX' onchange='validarNota(this); calcularNotas("${materia}")'></td>`;
+    row += `<td id='${materia}_Q'>0.00</td></tr>`;
+    tbody.innerHTML += row;
+  });
+}
+
+function validarNota(input){
+  if(input.value>10){ alert("La nota máxima es 10"); input.value=10; }
+  if(input.value<0){ alert("La nota mínima es 0"); input.value=0; }
+}
+
+function calcularNotas(materia){
+  let parciales=[];
+  for(let p=1;p<=3;p++){
+    let d=+document.getElementById(`${materia}_P${p}_D`).value||0;
+    let a=+document.getElementById(`${materia}_P${p}_A`).value||0;
+    let l=+document.getElementById(`${materia}_P${p}_L`).value||0;
+    let e=+document.getElementById(`${materia}_P${p}_E`).value||0;
+    let nota = (d*0.2 + a*0.2 + l*0.2 + e*0.4).toFixed(2);
+    document.getElementById(`${materia}_P${p}_N`).innerText=nota;
+    parciales.push(+nota);
+  }
+  let prom=(parciales.reduce((a,b)=>a+b,0)/3).toFixed(2);
+  document.getElementById(`${materia}_PROM`).innerText=prom;
+  let ex=+document.getElementById(`${materia}_EX`).value||0;
+  let quimestre=(prom*0.8+ex*0.2).toFixed(2);
+  document.getElementById(`${materia}_Q`).innerText=quimestre;
+}
+
+function exportarPDF(){
+  document.getElementById("fechaExportacion").textContent=new Date().toLocaleString();
+  window.print();
+}
+
+function eliminarDatos(){
+  if(confirm("¿Deseas eliminar los datos actuales?")){
+    document.getElementById("tablaNotas").innerHTML="";
+    document.getElementById("nombreEstudiante").textContent="";
+    document.getElementById("fechaRegistro").textContent="";
+    document.getElementById("fechaExportacion").textContent="";
+    document.getElementById("inputNombre").value="";
+  }
+}
+  // Botón salir al menú.html
+  btnSalir.addEventListener('click', () => {
+    window.location.href = 'menu.html';
+  });
+</script>
+
+</body>
+</html>
